@@ -1,0 +1,53 @@
+name: Build Nginx for Windows
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: |
+        choco install strawberryperl nasm -y
+        choco install wget -y
+
+    - name: Download and Extract Nginx Source
+      run: |
+        wget http://nginx.org/download/nginx-1.23.0.tar.gz
+        tar -zxvf nginx-1.23.0.tar.gz
+
+    - name: Download and Extract PCRE, Zlib, and OpenSSL
+      run: |
+        wget https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz
+        tar -zxvf pcre-8.45.tar.gz
+        wget https://zlib.net/zlib-1.2.11.tar.gz
+        tar -zxvf zlib-1.2.11.tar.gz
+        wget https://www.openssl.org/source/openssl-1.1.1l.tar.gz
+        tar -zxvf openssl-1.1.1l.tar.gz
+
+    - name: Compile Nginx for Windows
+      run: |
+        cd nginx-1.23.0
+        auto/configure --with-http_ssl_module --with-pcre=../pcre-8.45 --with-zlib=../zlib-1.2.11 --with-openssl=../openssl-1.1.1l
+        nmake
+
+    - name: Archive Nginx Binary
+      run: |
+        tar -czvf nginx-windows.tar.gz objs/nginx.exe conf
+      continue-on-error: true
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: nginx-windows
+        path: nginx-windows.tar.gz
