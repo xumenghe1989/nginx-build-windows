@@ -20,26 +20,23 @@ jobs:
       run: |
         choco install strawberryperl nasm -y
         choco install wget -y
+        choco install make -y
 
-    - name: Download and Extract Nginx Source
+    - name: Download Nginx Source and Dependencies
       run: |
         wget http://nginx.org/download/nginx-1.23.0.tar.gz
         tar -zxvf nginx-1.23.0.tar.gz
-
-    - name: Download and Extract PCRE, Zlib, and OpenSSL
-      run: |
-        wget https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz
-        tar -zxvf pcre-8.45.tar.gz
-        wget https://zlib.net/zlib-1.2.11.tar.gz
-        tar -zxvf zlib-1.2.11.tar.gz
+        wget https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.zip -O pcre-8.45.zip
+        wget https://zlib.net/zlib1211.zip -O zlib-1.2.11.zip
         wget https://www.openssl.org/source/openssl-1.1.1l.tar.gz
         tar -zxvf openssl-1.1.1l.tar.gz
+        tar -xf pcre-8.45.zip
+        tar -xf zlib-1.2.11.zip
 
-    - name: Compile Nginx for Windows
+    - name: Compile Nginx for Windows with Makefile
       run: |
         cd nginx-1.23.0
-        auto/configure --with-http_ssl_module --with-pcre=../pcre-8.45 --with-zlib=../zlib-1.2.11 --with-openssl=../openssl-1.1.1l
-        nmake
+        make -f Makefile.win PCRE=../pcre-8.45 ZLIB=../zlib-1.2.11 OPENSSL=../openssl-1.1.1l
 
     - name: Archive Nginx Binary
       run: |
@@ -47,7 +44,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3  # 使用 v3 版本
+      uses: actions/upload-artifact@v3
       with:
         name: nginx-windows
         path: nginx-windows.tar.gz
