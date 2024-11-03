@@ -1,4 +1,4 @@
-name: Build NGINX RPM on CentOS 8
+name: Build NGINX Tarball on CentOS 8
 
 on:
   push:
@@ -16,52 +16,35 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Set up CentOS 8 environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rpm build-essential libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl-dev
+          sudo dnf install -y epel-release
+          sudo dnf install -y gcc make pcre-devel zlib-devel openssl-devel
 
-      - name: Download NGINX source and prepare for RPM build
+      - name: Download NGINX source
         run: |
           curl -O http://nginx.org/download/nginx-1.20.1.tar.gz
           tar -xvf nginx-1.20.1.tar.gz
-          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-          mv nginx-1.20.1.tar.gz ~/rpmbuild/SOURCES/
+          cd nginx-1.20.1
 
-      - name: Create NGINX spec file
+      - name: Compile NGINX
         run: |
-          cat <<EOL > ~/rpmbuild/SPECS/nginx.spec
-          Name: nginx
-          Version: 1.20.1
-          Release: 1%{?dist}
-          Summary: NGINX web server
-          License: BSD
-          Source0: nginx-1.20.1.tar.gz
-
-          BuildRequires: gcc, make, libpcre3-dev, zlib1g-dev, libssl-dev
-          Requires: libpcre3, zlib1g, libssl1.1
-
-          %description
-          NGINX is a high-performance web server.
-
-          %prep
-          %setup -q
-
-          %build
-          export CFLAGS="-Wno-deprecated-declarations"
-          ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module --with-stream
+          cd nginx-1.20.1
+          ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module
           make
 
-          %install
-          rm -rf %{buildroot}
-          make DESTDIR=%{buildroot} install
+      - name: Install NGINX locally (to create tarball)
+        run: |
+          cd nginx-1.20.1
+          make install DESTDIR=~/nginx-install
 
-          %files
-          /usr/sbin/nginx
-          /etc/nginx
+      - name: Create tar.gz package
+        run: |
+          cd ~/nginx-install
+          tar -czvf nginx-1.20.1.tar.gz .
 
-          %changelog
-          * Thu Nov 02 2024 Your Name <your.email@example.com> - 1.20.1-1
-          - Initial package
-          EOL
-          
+      - name: Upload NGINX tar.gz package
+        uses: actions/upload-artifact@v3
+        with:
+          name: nginx-tarball
+          path: ~/nginx-install/nginx-1.20.1.tar.gz
