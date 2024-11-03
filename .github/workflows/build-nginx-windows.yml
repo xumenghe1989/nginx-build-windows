@@ -48,7 +48,7 @@ jobs:
           %setup -q
 
           %build
-          ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module --with-stream
+          ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module --with-stream CFLAGS="-Wno-deprecated-declarations"
           make
 
           %install
