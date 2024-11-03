@@ -19,30 +19,57 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm mock
+          sudo apt-get install -y rpm build-essential libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl-dev
 
-      - name: Set up mock configuration for CentOS 8
-        run: |
-          sudo usermod -a -G mock $USER
-          echo "config_opts['target_arch'] = 'x86_64'" | sudo tee -a /etc/mock/default.cfg
-          echo "config_opts['dist'] = 'el8'" | sudo tee -a /etc/mock/default.cfg
-          sudo mock -r epel-8-x86_64 --init
-
-      - name: Prepare NGINX source
+      - name: Download NGINX source and prepare for RPM build
         run: |
           curl -O http://nginx.org/download/nginx-1.20.1.tar.gz
           tar -xvf nginx-1.20.1.tar.gz
-          cd nginx-1.20.1
+          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          mv nginx-1.20.1.tar.gz ~/rpmbuild/SOURCES/
+
+      - name: Create NGINX spec file
+        run: |
+          cat <<EOL > ~/rpmbuild/SPECS/nginx.spec
+          Name: nginx
+          Version: 1.20.1
+          Release: 1%{?dist}
+          Summary: NGINX web server
+          License: BSD
+          Source0: nginx-1.20.1.tar.gz
+
+          BuildRequires: gcc, make, pcre-devel, zlib-devel, openssl-devel
+          Requires: pcre, zlib, openssl
+
+          %description
+          NGINX is a high-performance web server.
+
+          %prep
+          %setup -q
+
+          %build
           ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module --with-stream
           make
 
+          %install
+          rm -rf %{buildroot}
+          make DESTDIR=%{buildroot} install
+
+          %files
+          /usr/sbin/nginx
+          /etc/nginx
+
+          %changelog
+          * Thu Nov 02 2024 Your Name <your.email@example.com> - 1.20.1-1
+          - Initial package
+          EOL
+
       - name: Build RPM
         run: |
-          cd nginx-1.20.1
-          sudo checkinstall --pkgname=nginx --pkgversion=1.20.1 --pkgrelease=1.el8 --default
+          rpmbuild -bb ~/rpmbuild/SPECS/nginx.spec
 
       - name: Upload RPM package
         uses: actions/upload-artifact@v3
         with:
           name: nginx-rpm
-          path: /workspace/nginx-1.20.1-1.el8.x86_64.rpm
+          path: ~/rpmbuild/RPMS/x86_64/*.rpm
