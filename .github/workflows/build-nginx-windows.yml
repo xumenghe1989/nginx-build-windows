@@ -1,4 +1,4 @@
-name: Build NGINX on CentOS 8
+name: Build NGINX on Ubuntu
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: centos-8  # Use a CentOS 8 runner
+    runs-on: ubuntu  # Use a CentOS 8 runner
 
     steps:
       - name: Checkout source code
