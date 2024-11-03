@@ -18,7 +18,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y gcc make pcre-devel zlib-devel openssl-devel tar curl
+          sudo apt-get install -y gcc libpcre3 libpcre3-dev  zlib1g-dev openssl libssl-dev
 
       - name: Download and build NGINX
         run: |
