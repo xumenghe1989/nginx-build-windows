@@ -28,10 +28,8 @@ jobs:
           ./configure --prefix=/usr 
           make
           sudo make install DESTDIR=/nginx-install
-          sudo ls -ll /nginx-install/
-          sudo find / -name 'nginx-1.20.1'
-          sudo find / -name 'nginx-install'
-          sudo tar -czvf nginx-1.20.1.tar.gz /nginx-install/
+          cd /home/runner/work/nginx-build-windows/nginx-build-windows/
+          sudo tar -czvf nginx-1.20.1.tar.gz ./nginx-1.20.1
         
       - name: Upload NGINX tar.gz package
         uses: actions/upload-artifact@v3
