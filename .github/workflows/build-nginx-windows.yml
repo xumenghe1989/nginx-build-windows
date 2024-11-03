@@ -64,13 +64,3 @@ jobs:
           * Thu Nov 02 2024 Your Name <your.email@example.com> - 1.20.1-1
           - Initial package
           EOL
-
-      - name: Build RPM
-        run: |
-          rpmbuild -bb ~/rpmbuild/SPECS/nginx.spec --nodeps
-
-      - name: Upload RPM package
-        uses: actions/upload-artifact@v3
-        with:
-          name: nginx-rpm
-          path: ~/rpmbuild/RPMS/x86_64/*.rpm
