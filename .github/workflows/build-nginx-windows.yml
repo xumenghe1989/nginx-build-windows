@@ -10,41 +10,34 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # This is fine since we'll use Docker
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Set up CentOS 8 environment
+      - name: Set up Docker
         run: |
-          sudo dnf install -y epel-release
-          sudo dnf install -y gcc make pcre-devel zlib-devel openssl-devel
-
-      - name: Download NGINX source
-        run: |
-          curl -O http://nginx.org/download/nginx-1.20.1.tar.gz
-          tar -xvf nginx-1.20.1.tar.gz
-          cd nginx-1.20.1
-
-      - name: Compile NGINX
-        run: |
-          cd nginx-1.20.1
-          ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module
-          make
-
-      - name: Install NGINX locally (to create tarball)
-        run: |
-          cd nginx-1.20.1
-          make install DESTDIR=~/nginx-install
-
-      - name: Create tar.gz package
-        run: |
-          cd ~/nginx-install
-          tar -czvf nginx-1.20.1.tar.gz .
+          echo "Using Docker to run CentOS 8"
+      
+      - name: Build NGINX in Docker
+        uses: docker://centos:8
+        with:
+          args: |
+            /bin/bash -c "
+            yum install -y epel-release &&
+            yum install -y gcc make pcre-devel zlib-devel openssl-devel tar &&
+            curl -O http://nginx.org/download/nginx-1.20.1.tar.gz &&
+            tar -xvf nginx-1.20.1.tar.gz &&
+            cd nginx-1.20.1 &&
+            ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module &&
+            make &&
+            make install DESTDIR=/nginx-install &&
+            cd /nginx-install &&
+            tar -czvf nginx-1.20.1.tar.gz ."
 
       - name: Upload NGINX tar.gz package
         uses: actions/upload-artifact@v3
         with:
           name: nginx-tarball
-          path: ~/nginx-install/nginx-1.20.1.tar.gz
+          path: nginx-install/nginx-1.20.1.tar.gz
