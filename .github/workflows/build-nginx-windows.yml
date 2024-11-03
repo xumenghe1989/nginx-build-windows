@@ -29,9 +29,9 @@ jobs:
           make
           sudo make install DESTDIR=/nginx-install
           cd /nginx-install
-          mkdir nginx-1.20.1
-          cp -r * nginx-1.20.1/
-          tar -czvf nginx-1.20.1.tar.gz nginx-1.20.1
+          sudo mkdir nginx-1.20.1
+          sudo cp -r * nginx-1.20.1/
+          sudo tar -czvf nginx-1.20.1.tar.gz nginx-1.20.1
         
       - name: Upload NGINX tar.gz package
         uses: actions/upload-artifact@v3
