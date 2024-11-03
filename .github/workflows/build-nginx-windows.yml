@@ -1,4 +1,4 @@
-name: Build Nginx for Windows
+name: Build NGINX RPM on CentOS 8
 
 on:
   push:
@@ -10,41 +10,39 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-    - name: Install Dependencies
-      run: |
-        choco install strawberryperl nasm -y
-        choco install wget -y
-        choco install make -y
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm mock
 
-    - name: Download Nginx Source and Dependencies
-      run: |
-        wget http://nginx.org/download/nginx-1.23.0.tar.gz
-        tar -zxvf nginx-1.23.0.tar.gz
-        wget https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.zip -O pcre-8.45.zip
-        wget https://zlib.net/zlib1211.zip -O zlib-1.2.11.zip
-        wget https://www.openssl.org/source/openssl-1.1.1l.tar.gz
-        tar -zxvf openssl-1.1.1l.tar.gz
-        tar -xf pcre-8.45.zip
-        tar -xf zlib-1.2.11.zip
+      - name: Set up mock configuration for CentOS 8
+        run: |
+          sudo usermod -a -G mock $USER
+          echo "config_opts['target_arch'] = 'x86_64'" | sudo tee -a /etc/mock/default.cfg
+          echo "config_opts['dist'] = 'el8'" | sudo tee -a /etc/mock/default.cfg
+          sudo mock -r epel-8-x86_64 --init
 
-    - name: Compile Nginx for Windows with Makefile
-      run: |
-        cd nginx-1.23.0
-        make -f Makefile.win PCRE=../pcre-8.45 ZLIB=../zlib-1.2.11 OPENSSL=../openssl-1.1.1l
+      - name: Prepare NGINX source
+        run: |
+          curl -O http://nginx.org/download/nginx-1.20.1.tar.gz
+          tar -xvf nginx-1.20.1.tar.gz
+          cd nginx-1.20.1
+          ./configure --prefix=/usr --with-http_ssl_module --with-http_v2_module --with-stream
+          make
 
-    - name: Archive Nginx Binary
-      run: |
-        tar -czvf nginx-windows.tar.gz objs/nginx.exe conf
-      continue-on-error: true
+      - name: Build RPM
+        run: |
+          cd nginx-1.20.1
+          sudo checkinstall --pkgname=nginx --pkgversion=1.20.1 --pkgrelease=1.el8 --default
 
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: nginx-windows
-        path: nginx-windows.tar.gz
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v2
+        with:
+          name: nginx-rpm
+          path: /workspace/nginx-1.20.1-1.el8.x86_64.rpm
