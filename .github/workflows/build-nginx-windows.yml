@@ -1,4 +1,4 @@
-name: Build NGINX Tarball on CentOS 8
+name: Build NGINX Tarball on CentOS Stream 8
 
 on:
   push:
@@ -16,17 +16,13 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Set up Docker
-        run: |
-          echo "Using Docker to run CentOS 8"
-      
       - name: Build NGINX in Docker
-        uses: docker://centos:8
-        with:
-          args: |
-            /bin/bash -c "
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace --workdir /workspace centos:stream8 /bin/bash -c "
+            # Set up DNS resolution
+            echo 'nameserver 8.8.8.8' > /etc/resolv.conf &&
             yum install -y epel-release &&
-            yum install -y gcc make pcre-devel zlib-devel openssl-devel tar &&
+            yum install -y gcc make pcre-devel zlib-devel openssl-devel tar curl &&
             curl -O http://nginx.org/download/nginx-1.20.1.tar.gz &&
             tar -xvf nginx-1.20.1.tar.gz &&
             cd nginx-1.20.1 &&
