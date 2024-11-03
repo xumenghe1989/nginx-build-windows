@@ -1,4 +1,4 @@
-name: Build NGINX on Ubuntu
+name: Build NGINX on ubuntu-22.04
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu  # Use a CentOS 8 runner
+    runs-on: ubuntu-22.04  # Use a CentOS 8 runner
 
     steps:
       - name: Checkout source code
@@ -18,8 +18,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo yum install -y epel-release
-          sudo yum install -y gcc make pcre-devel zlib-devel openssl-devel tar curl
+          sudo apt-get install -y gcc make pcre-devel zlib-devel openssl-devel tar curl
 
       - name: Download and build NGINX
         run: |
